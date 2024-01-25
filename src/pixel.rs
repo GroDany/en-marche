@@ -1,9 +1,9 @@
 use sdl2::{pixels::Color, rect::Point};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Pixel {
-    coord: Point,
-    color: Color,
+    pub coord: Point,
+    pub color: Color,
 }
 
 impl Default for Pixel {
