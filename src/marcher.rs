@@ -7,8 +7,9 @@ use crate::{
 };
 
 const NUMBER_OF_STEPS: u8 = 32;
-const HIT_RANGE: f64 = 5.0;
-const MAXIMUM_DISTANCE: f64 = 0.001;
+const HIT_RANGE: f64 = 0.01;
+const MAXIMUM_DISTANCE: f64 = 1000.0;
+const SCREEN_Y: f64 = 5.0;
 
 pub struct Marcher {
     pixels: Vec<Pixel>,
@@ -29,10 +30,10 @@ impl Marcher {
         let shape = Sphere {
             center: EMPoint {
                 x: 0.0,
-                y: 20.0,
+                y: 8.0,
                 z: 0.0,
             },
-            radius: 10.0,
+            radius: 1.0,
         };
 
         Self {
@@ -45,27 +46,24 @@ impl Marcher {
     }
 
     pub fn init_rays(&mut self) {
-        let x_og: f64 = -1.0 * (self.width as f64 / 2.0);
-        let z_og: f64 = self.height as f64 / 2.0;
+        let x_og = -1.0 * (self.width as f64 / self.height as f64);
+        let h_step = 2.0 / (self.height) as f64;
 
         for i in 0..self.height {
             for j in 0..self.width {
-                let point = EMPoint {
-                    x: x_og + j as f64,
-                    y: 10.0,
-                    z: z_og - i as f64,
-                };
-                // println!("x{}, y{}, z{}", point.x, point.y, point.z);
-                self.rays.push(point.norm());
+                let ray = EMPoint {
+                    x: x_og + j as f64 * h_step,
+                    y: SCREEN_Y,
+                    z: 1.0 - i as f64 * h_step,
+                }
+                .unit();
+                self.rays.push(ray);
             }
         }
     }
 
     pub fn march(&mut self) -> &Vec<Pixel> {
         self.march_all();
-        // for pixel in self.pixels.iter() {
-        //     println!("x: {}, y: {}", pixel.coord.x, pixel.coord.x);
-        // }
         return &self.pixels;
     }
 
@@ -74,41 +72,60 @@ impl Marcher {
             let x: i32 = pos as i32 % self.width as i32;
             let y: i32 = pos as i32 / self.width as i32;
             let coord: Point = Point::new(x, y);
-            // println!("x{}, y{}", x, y);
-            // println!("x{}, y{}, z{}", e.x, e.y, e.z);
-            if self.marche_one(e) {
-                self.pixels
-                    .push(Pixel::new(coord, Color::RGB(255, 255, 255)));
-            } else {
-                self.pixels.push(Pixel::new(coord, Color::RGB(0, 0, 0)));
+            match self.march_one(e) {
+                Some(color) => {
+                    self.pixels.push({
+                        let coord = coord;
+                        Pixel { coord, color }
+                    });
+                }
+                None => self.pixels.push(Pixel::new(coord, Color::RGB(0, 0, 0))),
             }
         }
     }
 
-    fn marche_one(&self, ray: &EMPoint) -> bool {
+    fn march_one(&self, ray: &EMPoint) -> Option<Color> {
         let mut travelled: f64 = 0.0;
-
-        let mut current_position = EMPoint::from(ray);
+        let mut current_position = EMPoint {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
         for _ in 0..NUMBER_OF_STEPS {
-            // TEMP: Check the sphere only
-            let distance = self.shape.distance(&current_position);
-
-            // if distance < 5.0 {
-            //     println!("distance {}", distance);
-            // }
-
+            let distance = self.map_scene(&current_position);
             if distance < HIT_RANGE {
-                return true;
+                let light = EMPoint {
+                    x: -10.0,
+                    y: 0.0,
+                    z: 10.0,
+                };
+                let normal = self.calculate_normal(&current_position);
+                let light_d = light.sub_point(&current_position).unit();
+                let dot = normal.dot(&light_d);
+                let c = if dot > 0.0 { dot } else { 0.0 };
+                let color = Color::RGB((0.0 * 255.0) as u8, (c * 255.0) as u8, (0.0 * 255.0) as u8);
+                return Some(color);
             }
-
             if travelled > MAXIMUM_DISTANCE {
-                return false;
+                return None;
             }
-
             travelled += distance;
-            current_position = current_position.mult_scalar(travelled);
+            current_position = ray.mult_scalar(travelled);
         }
 
-        false
+        None
+    }
+
+    fn map_scene(&self, point: &EMPoint) -> f64 {
+        let test = (point.x * 4.0).sin() * (point.y * 4.0).sin() * (point.z * 4.0).sin() * 0.25;
+        // TEMP: Checks the sphere only
+        self.shape.distance(point) + test
+    }
+
+    fn calculate_normal(&self, point: &EMPoint) -> EMPoint {
+        let x = self.map_scene(&point.add_x(0.001)) - self.map_scene(&point.sub_x(0.001));
+        let y = self.map_scene(&point.add_y(0.001)) - self.map_scene(&point.sub_y(0.001));
+        let z = self.map_scene(&point.add_z(0.001)) - self.map_scene(&point.sub_z(0.001));
+        EMPoint { x, y, z }.unit()
     }
 }

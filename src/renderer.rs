@@ -41,24 +41,9 @@ impl Renderer {
 
     pub fn run(&mut self) {
         let pixels = self.marcher.march();
-        let mut color = pixels[0].color;
-        let mut pixels_to_draw: Vec<&Pixel> = vec![];
-        self.canvas.set_draw_color(color);
         for pixel in pixels.iter() {
-            if pixel.color != color {
-                let _ = self.canvas.draw_points(
-                    pixels_to_draw
-                        .iter()
-                        .map(|x| x.coord)
-                        .collect::<Vec<Point>>()
-                        .as_slice(),
-                );
-                color = pixel.color;
-                self.canvas.set_draw_color(color);
-                pixels_to_draw.clear();
-            } else {
-                pixels_to_draw.push(pixel);
-            }
+            self.canvas.set_draw_color(pixel.color);
+            let _ = self.canvas.draw_point(pixel.coord);
         }
         self.canvas.present();
     }

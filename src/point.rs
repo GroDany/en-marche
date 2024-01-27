@@ -5,19 +5,12 @@ pub struct EMPoint {
 }
 
 impl EMPoint {
-    pub fn from(point: &EMPoint) -> Self {
-        Self {
-            x: point.x,
-            y: point.y,
-            z: point.z,
-        }
-    }
-    pub fn magnitude(&self) -> f64 {
+    pub fn norm(&self) -> f64 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
-    pub fn norm(&self) -> Self {
-        self.mult_scalar(1.0 / (self.x * self.x + self.y * self.y + self.z * self.z).sqrt())
+    pub fn unit(&self) -> Self {
+        self.mult_scalar(1.0 / self.norm())
     }
 
     pub fn add_point(&self, n: &EMPoint) -> Self {
@@ -58,5 +51,57 @@ impl EMPoint {
             y: self.y * n,
             z: self.z * n,
         }
+    }
+
+    pub fn add_x(&self, n: f64) -> Self {
+        Self {
+            x: self.x + n,
+            y: self.y,
+            z: self.z,
+        }
+    }
+
+    pub fn add_y(&self, n: f64) -> Self {
+        Self {
+            x: self.x,
+            y: self.y + n,
+            z: self.z,
+        }
+    }
+
+    pub fn add_z(&self, n: f64) -> Self {
+        Self {
+            x: self.x,
+            y: self.y,
+            z: self.z + n,
+        }
+    }
+
+    pub fn sub_x(&self, n: f64) -> Self {
+        Self {
+            x: self.x - n,
+            y: self.y,
+            z: self.z,
+        }
+    }
+
+    pub fn sub_y(&self, n: f64) -> Self {
+        Self {
+            x: self.x,
+            y: self.y - n,
+            z: self.z,
+        }
+    }
+
+    pub fn sub_z(&self, n: f64) -> Self {
+        Self {
+            x: self.x,
+            y: self.y,
+            z: self.z - n,
+        }
+    }
+
+    pub fn dot(&self, point: &EMPoint) -> f64 {
+        self.x * point.x + self.y * point.y + self.z * point.z
     }
 }

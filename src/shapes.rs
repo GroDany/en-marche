@@ -11,6 +11,7 @@ pub struct Sphere {
 
 impl Distance for Sphere {
     fn distance(&self, p: &EMPoint) -> f64 {
-        return p.sub_point(&self.center).magnitude() - self.radius;
+        let v = self.center.sub_point(p);
+        return v.norm() - self.radius;
     }
 }
